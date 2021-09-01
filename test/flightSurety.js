@@ -7,7 +7,7 @@ contract('Flight Surety Tests', async (accounts) => {
   var config;
   before('setup contract', async () => {
     config = await Test.Config(accounts);
-    await config.flightSuretyData.authorizeCaller(config.flightSuretyApp.address);
+    await config.flightSuretyData.authorizeCaller.call(config.firstAirline);
   });
 
   /****************************************************************************************/
@@ -80,15 +80,43 @@ contract('Flight Surety Tests', async (accounts) => {
     try {
         await config.flightSuretyApp.registerAirline(newAirline, {from: config.firstAirline});
     }
-    catch(e) {
-
-    }
+    catch(e) {}
     let result = await config.flightSuretyData.isAirline.call(newAirline); 
 
     // ASSERT
     assert.equal(result, false, "Airline should not be able to register another airline if it hasn't provided funding");
 
   });
- 
+
+  // RUBRIC Airlines
+  // ---------------------
+  it(`(airline) First airline is registered when contract is deployed.`, async function () {
+    assert.equal(config.firstAirline, accounts[1]);
+  });
+
+  it(`(multiparty) Only existing airline may register a new airline until there are at least four airlines registered`, async function () {
+
+    // ARRANGE
+    let newAirline = accounts[2];
+
+    // ACT
+    try {
+        const leRes = (await config.flightSuretyApp.registerAirline.call(newAirline, {from: config.firstAirline})).words[0];
+        console.log(leRes);
+    }
+    catch(e) {
+      console.log('err', e);
+    }
+
+    // console.log(config.flightSuretyData);
+    const countMethod = await config.flightSuretyData.airlinesCount.call();
+    const result = countMethod.words[0]; 
+
+    console.log(countMethod);
+
+    // ASSERT
+    assert(result <= 4, "There are more than 4 airlines registered");
+
+  });
 
 });
